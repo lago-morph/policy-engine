@@ -17,10 +17,10 @@
 8. The CRD is **retained as an immutable audit record** (§17C.6); future deletes or spec edits are rejected by the controller's validating webhook — only controller status transitions are writable.
 
 ## Success criteria (testable)
-- On the first apply, admission is denied with reason `approval-required`, and a `PolicyApprovalRequest` matching the §17C.6 schema exists with `status: pending`.
-- An `approval.requested` webhook matching §17B.3 was emitted with the CRD's name (or UID) as `correlation_id` and a populated `expires_at`.
-- When `status: approved` is patched, an `approval.granted` event is emitted with the same `correlation_id`.
-- A re-applied identical Deployment spec is admitted by the PDP after grant and denied again if `status: denied`.
+- First apply is denied with reason `approval-required`, and a `PolicyApprovalRequest` matching the §17C.6 schema exists with `status: pending`.
+- An `approval.requested` webhook (§17B.3) was emitted with the CRD's name (or UID) as `correlation_id` and a populated `expires_at`.
+- When `status: approved` is patched, `approval.granted` is emitted with the same `correlation_id`.
+- A re-applied identical Deployment spec is admitted after grant; denied again if `status: denied`.
 - The CRD cannot be mutated by users (only by the controller) and is retained after the deploy succeeds.
 - A single audit query by `correlation_id` returns the full chain: deny, CRD create, requested, granted, allow.
 
@@ -42,4 +42,4 @@ flowchart TD
 ```
 
 ## Notes
-Related: DT-58 / DT-59 (suspend & admission deny paths), DT-61 (GitOps hold), DT-62 (expiry & re-auth). The CRD name doubles as the `correlation_id`, giving a single key for cross-system evidence.
+Related: DT-58, DT-59, DT-61, DT-62. The CRD name doubles as the `correlation_id`, giving a single key for cross-system evidence.

@@ -1,42 +1,43 @@
 # DT-44 — Install Headlamp plugin and authenticate via Keycloak OIDC
 
 **Personas:** Marcus (Platform Security Engineer), Jess (SRE / Cluster Operator)
-**Spec sections:** §16.2 Framework Requirements (Headlamp plugin model, OIDC, Kubernetes-native RBAC discovery), §17A.4 Keycloak Integration, §17A.5 Storage-Level Access Controls, §16.3 Required Views
+**Spec sections:** §16.1 Console objectives, §16.2 Framework Requirements (Headlamp plugin, Keycloak/OIDC, RBAC discovery), §17A.4 Keycloak Integration, §17A.5 Storage-Level Access Controls
 **Type:** Low-level
-**Pre-condition:** Headlamp is deployed in `cluster-a` (and on engineers' workstations). Keycloak realm `platform` has the platform OIDC client registered with the required claim mappers (§17A.4: `sub`, `preferred_username`, `email`, `groups`, `realm_access.roles`, `resource_access.platform.roles`, `namespaces`, `policy_domains`, `tenants`). Marcus holds Platform Governance Admin; Jess holds Security Reviewer scoped to `cluster=cluster-a`, `namespaces=[prod-east, payments-prod, …]`.
-**Trigger:** A new release of the platform's Headlamp plugin (Governance Console) is published; Marcus rolls it out, then Jess logs in for the first time.
+**Pre-condition:** Keycloak realm `platform` exists with `groups`, `realm_access.roles`, `namespaces`, `policy_domains`, `tenants` claim mappers per §17A.4. Headlamp is deployed and connected to `cluster-a` and `cluster-b`. Jess is in group `sre-cluster-a` with `namespaces:["payments-prod","payments-dev","platform"]` and role `sre`. The platform publishes the governance-console plugin as a signed OCI artifact.
+**Trigger:** Marcus rolls out the plugin to SRE Headlamp installs so Jess can investigate denies in-context (see DT-41).
 
 ## Steps
-1. Marcus installs the Headlamp plugin from the platform's OCI plugin registry: `headlamp plugins install oci://registry.local/plugins/governance-console:v1.4`. The plugin manifests register the five §16.3 views (Governance Graph, Rego Explorer, Runtime Enforcement, Audit Correlation, Namespace Authoring) under a sidebar group.
-2. On load, the plugin uses Headlamp's Kubernetes-native context discovery (§16.2) to detect the active kubeconfig context `cluster-a`, the API server URL, and the in-cluster service endpoints for the Governance API and Compliance Analytics. Cluster context appears in the plugin header; no manual cluster registration is needed.
-3. The plugin redirects Marcus to Keycloak's authorization endpoint with `client_id=governance-console`, scopes `openid profile groups platform-claims`, and PKCE. Marcus authenticates; Keycloak issues an ID token + access token carrying the §17A.4 required claims.
-4. The plugin's OIDC handler validates the token, then calls the Governance API `/v1/subject/normalize`, which resolves the token claims into the §17A.4 normalized subject JSON (`subject_id`, `username`, `roles`, `groups`, `namespaces`, `policy_domains`, `tenants`). The subject is cached for the session.
-5. Marcus's normalized subject (`roles=[platform-governance-admin]`, broad scope) drives view rendering: all five §16.3 views are visible; the Runtime Enforcement View lists every cluster.
-6. Jess logs into Headlamp on her workstation and opens the Governance Console plugin. The same OIDC flow runs; her token yields a normalized subject with `roles=[security-reviewer]`, `namespaces=[prod-east, payments-prod, …]`, `tenants=[platform]`.
-7. View scoping is applied by both the plugin (UI hides Namespace Authoring's "New Policy" button — she lacks `policy:edit`) and the storage layer (§17A.5: queries against the Governance API are filtered by her subject; out-of-scope clusters and namespaces return zero rows). Jess opens the Runtime Enforcement View and sees only `cluster-a` data scoped to her namespaces.
+1. Marcus installs the plugin: `headlamp-plugin install oci://registry/platform/headlamp-governance:v1.0`. The plugin manifest declares its OPA REST endpoints, WebAssembly Rego runtime, and OIDC client `headlamp-governance`.
+2. On first launch the plugin performs Kubernetes-native RBAC discovery (§16.2): it reads `SelfSubjectAccessReview` against each connected kubeconfig context and auto-discovers `cluster-a`, `cluster-b`. No static cluster list is required.
+3. Jess opens Headlamp. The governance plugin tab triggers an OIDC authorization-code flow against Keycloak realm `platform`, client `headlamp-governance`, scopes `openid groups roles namespaces policy_domains tenants`.
+4. Keycloak issues ID + access tokens. The plugin normalizes claims into the §17A.4 subject: `{subject_id, username:"jess", roles:["sre"], groups:["sre-cluster-a"], namespaces:["payments-prod","payments-dev","platform"], policy_domains:["runtime-security"], tenants:["payments","platform"]}`.
+5. The plugin attaches the subject to every backend call; the backend re-validates JWT signature, expiry, and `aud=headlamp-governance` per request and applies §17A.5 storage filters using the subject's scope.
+6. In-plugin views are scoped: Jess sees `cluster-a`+`cluster-b` cluster panels (RBAC-discovered) but only `payments-*` and `platform` namespaces inside Runtime Enforcement, Audit Correlation, and Namespace Authoring views. A storage-layer probe with her token for `default` policies returns empty (§17A.5).
+7. On token expiry the plugin runs the OIDC refresh flow silently; if refresh fails the plugin clears the cached subject and re-prompts. Marcus verifies the audit log: every plugin-originated request carries `subject.sub=jess` and a `correlation_id`.
 
 ## Success criteria (testable)
-- `headlamp plugins install …` registers the plugin and the five §16.3 views in the sidebar without restart.
-- Plugin auto-discovers cluster context from the active Headlamp kubeconfig; no manual cluster URL entry is required (§16.2 Kubernetes-native RBAC discovery).
-- Unauthenticated views redirect to Keycloak; PKCE OIDC flow completes; token contains all §17A.4 required claims; missing-claim tokens are rejected with a clear error.
-- `/v1/subject/normalize` produces the §17A.4 normalized subject JSON exactly matching the spec shape.
-- Jess's view set is restricted by her subject scope in both UI (hidden actions for missing permissions) and storage (out-of-scope queries return zero rows, verified by a direct API call bypassing the UI per §17A.5).
-- Logout clears the plugin session and revokes the cached subject; re-login is required.
+- Plugin installs from the signed OCI artifact and registers in Headlamp without modifying Headlamp core.
+- Cluster context auto-discovers via Kubernetes RBAC; no static cluster list is needed.
+- OIDC authorization-code flow completes; tokens contain all §17A.4 required claims.
+- Normalized subject matches the §17A.4 schema exactly for Jess.
+- In-plugin views render only data inside Jess's `namespaces`/`tenants`; a direct storage-layer query for out-of-scope objects returns empty (§17A.5).
+- JWT is re-validated server-side on each backend call (signature, expiry, audience); silent refresh works; failed refresh re-prompts.
+- Plugin-originated audit events include `subject.sub`, `groups`, `correlation_id`.
 
 ## Flowchart
 
 ```mermaid
 flowchart TD
-  INST[Marcus: headlamp plugins install\ngovernance-console:v1.4] --> REG[Plugin registers 5 views §16.3]
-  REG --> DISC[Auto-discover kubeconfig context\ncluster-a §16.2]
-  DISC --> LOGIN[Open plugin → redirect to Keycloak\nPKCE OIDC §16.2]
-  LOGIN --> TOKEN[ID + access token with\n§17A.4 required claims]
-  TOKEN --> NORM["/v1/subject/normalize\n→ normalized subject JSON §17A.4"]
-  NORM --> MARCUS[Marcus: admin scope\n→ all views, all clusters]
-  NORM --> JESS[Jess: security-reviewer\nnamespaces=[prod-east,…]]
-  JESS --> SCOPE[UI hides edit actions +\nstorage filters queries §17A.5]
-  SCOPE --> RTE[Runtime Enforcement View\nscoped to her namespaces]
+  M[Marcus installs plugin\noci://.../headlamp-governance:v1.0] --> RBAC[Plugin RBAC-discovers\ncluster-a, cluster-b §16.2]
+  RBAC --> J[Jess opens Headlamp\n→ governance tab]
+  J --> OIDC[OIDC auth-code flow\nrealm=platform §17A.4]
+  OIDC --> TOK[ID + access token\nwith required claims]
+  TOK --> NORM[Normalize claims →\n§17A.4 subject]
+  NORM --> API[Backend re-validates JWT\non every call]
+  API --> SCOPE[§17A.5 storage filter\nby subject scope]
+  SCOPE --> VIEW[Views show only\npayments-* + platform]
+  TOK --> REF[Silent refresh on expiry\nfail → re-prompt]
 ```
 
 ## Notes
-Related: DT-35 (adding a claim), DT-53 (granting the namespace-author role), DT-55 (storage-scope verification), HL-16 (IdP-driven claim evolution). §17A.5: storage-level filtering must be verified independently of the UI to detect GUI-only authorization regressions.
+Related: HL-16, DT-35, DT-41, DT-43. Headlamp is the §16.2 default for Kubernetes-first deployments because it inherits cluster context and namespace-scoped access patterns.

@@ -44,4 +44,4 @@ flowchart TD
 ```
 
 ## Notes
-Related: DT-61 (suspend pending approval), DT-65 (CRD lifecycle). `expires_at` is required by §17B.3; the platform must never silently extend it — re-auth always creates a new request.
+Related: DT-61, DT-65. `expires_at` is required by §17B.3; the platform must never silently extend it — re-auth always creates a new request.

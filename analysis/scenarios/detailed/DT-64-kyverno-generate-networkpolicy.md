@@ -18,11 +18,11 @@
 9. The Governance Console binding for `NET-DEFAULT-001` lists the `ClusterPolicy`, its `policy_version`, and an evidence stream of generate events keyed by namespace.
 
 ## Success criteria (testable)
-- Creating a new namespace results in a `NetworkPolicy/default-deny` and a `ResourceQuota/baseline-quota` in that namespace, both owned/reconciled by the Kyverno `generate` rules with `synchronize: true`.
-- A Kyverno `PolicyReport` for the namespace event exists and is normalized into a platform evidence event with `control_id=NET-DEFAULT-001` and `decision=generate`.
-- Deleting either generated resource causes Kyverno to recreate it (synchronize behavior verified).
-- The policy carries metadata mapping it to `NET-DEFAULT-001`, and the Governance Console correlates the policy and the evidence stream.
-- Jess's cluster smoke test fails when either companion resource is absent in a freshly-created namespace.
+- A new namespace gets `NetworkPolicy/default-deny` and `ResourceQuota/baseline-quota`, both reconciled by Kyverno `generate` rules with `synchronize: true`.
+- A Kyverno `PolicyReport` exists and is normalized into a platform event with `control_id=NET-DEFAULT-001` and `decision=generate`.
+- Deleting either generated resource causes Kyverno to recreate it (synchronize verified).
+- The policy carries metadata mapping it to `NET-DEFAULT-001`; the Governance Console correlates the policy and evidence stream.
+- Jess's smoke test fails when either companion resource is absent in a freshly-created namespace.
 
 ## Flowchart
 
@@ -42,4 +42,4 @@ flowchart TD
 ```
 
 ## Notes
-Related: DT-63 (engine selection), DT-15/DT-17 (Gatekeeper audit/reconcile patterns). The `generate` action is the discriminator that forces Kyverno here per §17C.1 and §17C.3.
+Related: DT-63, DT-15/DT-17. The `generate` action is the discriminator that forces Kyverno here per §17C.1 and §17C.3.
