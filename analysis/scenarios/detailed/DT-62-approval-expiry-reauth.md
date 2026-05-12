@@ -7,16 +7,16 @@
 **Trigger:** The scheduled approval-state reconciler observes that `expires_at` is less than 24 hours away for the active approval.
 
 ## Steps
-1. The platform reconciler scans active `PolicyApprovalRequest` resources (§17C.6); it finds the `deploy-api-payments-prod` request with `status: approved` and `expires_at` inside the warning window.
-2. The platform emits a §17B.3 webhook event `approval.expiring` carrying the original `control_id`, `resource`, `subject`, original `correlation_id`, and the current `expires_at`.
-3. Sam receives a notification in his usual workflow channel pointing at the soon-to-expire approval and a deep link to the `PolicyApprovalRequest` resource.
-4. Sam files a re-authorization by creating (or patching) a new `PolicyApprovalRequest` (§17C.6) with `status: pending`, `requestedBy: sam`, the same `controlId`, `resourceRef`, and `requiredApproval.value: production-release-approver`; the platform links it to the prior approval via `correlation_id`.
-5. The platform emits `approval.requested` (§17B.3) for the new CRD; the workflow system routes to the approver role.
-6. While the new request is pending and the old approval is still valid, deploys continue to evaluate `allow`; once `expires_at` passes without grant, the policy evaluates `suspend_pending_approval` (§17B.2) and Sam's next deploy is held.
-7. The approver grants the new request; the controller patches `status: approved` and writes a fresh `expires_at` (e.g., +90d); the platform emits `approval.granted` referencing both the new and prior `correlation_id`s.
+1. The platform reconciler scans active `PolicyApprovalRequest` resources (§17C.6); it finds `deploy-api-payments-prod` with `status: approved` and `expires_at` inside the warning window.
+2. The platform emits a §17B.3 `approval.expiring` webhook carrying the original `control_id`, `resource`, `subject`, original `correlation_id`, and current `expires_at`.
+3. Sam receives a notification in his workflow channel pointing at the soon-to-expire approval and a deep link to the CRD.
+4. Sam files a re-auth by creating a new `PolicyApprovalRequest` (§17C.6) with `status: pending`, `requestedBy: sam`, the same `controlId`, `resourceRef`, and `requiredApproval.value: production-release-approver`; the platform links it to the prior approval via `correlation_id`.
+5. The platform emits `approval.requested` (§17B.3) for the new CRD; the workflow routes to the approver role.
+6. While the new request is pending and the old approval is valid, deploys continue to `allow`; once `expires_at` passes without grant, the policy returns `suspend_pending_approval` (§17B.2) and Sam's next deploy is held.
+7. The approver grants the new request; the controller patches `status: approved` with a fresh `expires_at` (+90d); the platform emits `approval.granted` referencing both new and prior `correlation_id`s.
 8. Sam retries the deploy; the PDP returns `allow`; the action proceeds.
-9. Priya opens the Governance Console filtered to `DEPLOY-APPROVAL-001` for the quarter; she sees the original approval, the `approval.expiring` event, the re-auth `PolicyApprovalRequest`, and the new grant — one unbroken evidence chain.
-10. The expired CRD is retained immutably as audit history (§17C.6); only its `status` and `expires_at` transitions are recorded.
+9. Priya opens the Governance Console filtered to `DEPLOY-APPROVAL-001` for the quarter; she sees the original approval, the expiring event, the re-auth CRD, and the new grant — one unbroken evidence chain.
+10. The expired CRD is retained immutably as audit history (§17C.6); only `status` and `expires_at` transitions are recorded.
 
 ## Success criteria (testable)
 - An `approval.expiring` webhook is emitted at least once before `expires_at`, matching the §17B.3 schema and carrying the original `correlation_id`.

@@ -1,40 +1,42 @@
 # DT-43 — Use Namespace Authoring View as a Namespace Policy Author
 
-**Personas:** Sam (Application Developer, Namespace Policy Author for `payments-*`)
-**Spec sections:** §16.3 Namespace Authoring View, §17A.2 Namespace Policy Author / Namespace Policy Approver, §17A.3 Permission Primitives, §17A.5 Storage-Level Access Controls, §17.2 Namespace Simulation, §7 Policy Lifecycle
+**Personas:** Sam (Application Developer, acting as Namespace Policy Author for `payments-*`)
+**Spec sections:** §16.3 Namespace Authoring View, §17A.2 Namespace Policy Author / Approver, §17A.3 Permission Primitives, §17A.4 Keycloak claims, §17A.5 Storage-Level Access Controls, §17.2 Namespace Simulation
 **Type:** Mid-level
-**Pre-condition:** Sam is authenticated via Keycloak with normalized subject (§17A.4) `roles=[namespace-policy-author]`, `namespaces=[payments-prod, payments-dev]`, `policy_domains=[runtime-security]`, `tenants=[payments]`. A peer, Ravi, holds `namespace-policy-approver` for the same namespaces. The platform enforces scope in both the GUI and the storage layer (§17A.5).
-**Trigger:** Sam's team needs a per-pod request-rate ceiling for `payments-prod/api` to protect a downstream legacy SDK; he opens the Namespace Authoring View to draft a namespace-scoped policy.
+**Pre-condition:** Sam is in Keycloak group `team-payments`, role `namespace-policy-author`, claim `namespaces:["payments-prod","payments-dev"]`, `policy_domains:["runtime-security"]`. Teammate Pat holds `namespace-policy-approver` in the same scope. A Kyverno template `RateLimitAnnotations` exists in the shared library.
+**Trigger:** The payments team agrees to require an `x-ratelimit-tier` annotation on every `Deployment` in their namespaces, ahead of a rate-limit rollout.
 
 ## Steps
-1. Sam opens the Namespace Authoring View (§16.3) from the Headlamp plugin. The view lists only policies and simulation datasets whose authorization metadata (`namespaces`, `tenant`, `policy_domains`) intersect his subject scope — i.e. objects under `payments-*` (§17A.5). Other tenants' policies are absent from the query result, not merely hidden by GUI filtering.
-2. Sam clicks "New Policy" and selects the Kyverno `validate` template (§17D Kubernetes library). The form pre-fills `tenant=payments`, `namespaces=[payments-prod]`, `policy_domains=[runtime-security]`, `created_by=sam`, `visibility=namespace-scoped` per §17A.5 required metadata; the namespace selector is constrained to his authorized set.
-3. Sam authors `payments-api-rate-limit-v1` requiring `metadata.annotations["payments/rps-ceiling"]` ≤ 500. He saves a draft; the storage layer rejects writes outside the namespace set — verified by an internal `policy:edit` permission check (§17A.3).
-4. Sam clicks "Simulate" → Namespace Simulation (§17.2). The simulation dataset is auto-materialized from the last 30 days of `payments-prod` admission events (§17A.5: "Audit replay datasets must be materialized as scoped datasets before use"). Events outside his namespaces are excluded at materialization time, not at presentation time.
-5. The Namespace Authoring View renders namespace-scoped violation visibility: 4 historical pods would have been newly blocked. Sam tags 3 as "intended enforcement" and 1 as "potential false positive" (§17.4 differential semantics), then iterates the policy to add an exemption annotation, re-simulates, and reaches 0 false positives.
-6. Sam clicks "Request Promotion → warn" (§7 lifecycle). The platform creates a promotion request; because Sam holds `policy:edit` and `policy:test` but not `policy:promote-dry-run` for `payments-prod`, the request is routed to Ravi as Namespace Policy Approver.
-7. Ravi opens the same view in his approver scope, sees the simulation summary, signed policy diff, and Sam's tags. He clicks Approve. The policy promotes to `warn` mode in `payments-prod` only; namespace-scoped approval state in the view updates to `warn @ payments-prod`. A later promote-to-enforce will repeat the gate.
+1. Sam opens the Namespace Authoring View (§16.3). It lists only policies, simulations, violations, and approval states whose `namespaces` metadata intersects `payments-prod` or `payments-dev` — §17A.5 storage filters strip everything else before it reaches the GUI.
+2. Sam clicks "New namespace policy", picks `RateLimitAnnotations` from the library, names it `payments-ratelimit-tier`, scopes to `payments-*`, and authors the rule "require annotation `x-ratelimit-tier in {free, standard, premium}` on Deployments". The form is hard-locked to namespaces in Sam's claim and refuses any `clusterScope` field.
+3. Sam clicks "Simulate". The platform creates a `PolicySimulationRun` with `visibility=namespace-scoped`, `namespaces=["payments-prod","payments-dev"]`. Inputs are materialized as a scoped dataset (§17A.5) — no objects outside `payments-*` are included.
+4. Manifest + cluster-snapshot simulation (§17.2) reports: 6 existing Deployments in `payments-dev` lack the annotation (would be newly blocked); `payments-prod` is fully compliant. Sam tags the 6 dev hits as "intended enforcement" per §17.4 and updates the dev manifests.
+5. Sam submits the policy for approval. The `PolicyApprovalRequest` routes to namespace approvers — Pat sees it in his Namespace Authoring View. Global policy admins do not receive it; it never leaves `payments-*` scope.
+6. Pat opens the request, reviews the attached simulation report, and clicks Approve. Promotion writes the policy with `visibility=namespace-scoped`; the constraint syncs to `payments-prod` and `payments-dev` only, and appears in Sam's view as `active`.
 
 ## Success criteria (testable)
-- Namespace Authoring View lists only objects whose §17A.5 metadata intersects Sam's subject scope; cross-namespace queries return zero rows at the storage layer (not the GUI).
-- New-policy form pre-fills and locks the required scope metadata (`tenant`, `namespaces`, `policy_domains`, `visibility=namespace-scoped`).
-- Namespace Simulation materializes a scoped dataset from the past audit window and excludes out-of-scope events at materialization.
-- Sam cannot promote past `warn` without an in-namespace Approver; the workflow honors §17A.3 permission primitives (`policy:promote-dry-run`, `policy:promote-enforce`).
-- Approval by Ravi (same namespace) promotes the policy to `warn` in `payments-prod` only; `payments-dev` and other namespaces are unaffected.
-- An attempt by Sam to read or simulate against `treasury-prod` policies via the API returns no rows / 403 from the storage layer, independent of the GUI.
+- Namespace Authoring View renders only objects whose `namespaces`/`tenant` metadata intersect Sam's Keycloak claim; a storage-layer probe with Sam's token cannot retrieve `default` or `cluster-system` policies (§17A.5).
+- New-policy form server-side rejects any scope outside `payments-*` and any `clusterScope=true` value.
+- The simulation dataset carries `{namespaces:["payments-prod","payments-dev"], visibility:"namespace-scoped"}` and excludes other namespaces.
+- The approval request is visible to in-scope `namespace-policy-approver` holders (Pat) only.
+- After Pat approves, the constraint is enforced in `payments-prod`/`payments-dev` only.
+- Sam cannot self-approve his own policy (separation of `policy:edit` and `approval:approve` per §17A.3).
 
 ## Flowchart
 
 ```mermaid
 flowchart TD
-  AUTH[Sam logs in via Keycloak\nsubject: payments-* author §17A.4] --> VIEW[Namespace Authoring View §16.3\nshows only payments-* objects §17A.5]
-  VIEW --> NEW[New policy: Kyverno validate\nscope metadata pre-filled & locked]
-  NEW --> DRAFT[Draft payments-api-rate-limit-v1\nstorage enforces namespace bound §17A.3]
-  DRAFT --> SIM[Namespace Simulation §17.2\nscoped dataset materialized §17A.5]
-  SIM --> TAG[3 intended enforcement\n1 false positive → iterate §17.4]
-  TAG --> REQ[Request promotion → warn §7\nrouted to Approver Ravi]
-  REQ --> APPROVE[Ravi (in-namespace Approver) approves\n→ warn @ payments-prod only]
+  S[Sam opens Namespace\nAuthoring View §16.3] --> SCOPE[§17A.5 storage strips\nout-of-scope objects]
+  SCOPE --> NEW[New policy from\nRateLimitAnnotations template]
+  NEW --> LOCK[Form locked to\npayments-* claim §17A.4]
+  LOCK --> SIM[Simulate §17.2\nNamespace Simulation]
+  SIM --> DATA[Scoped dataset\nvisibility=namespace-scoped]
+  DATA --> RES[6 dev hits newly blocked\nprod already compliant]
+  RES --> TAG[Tag intended enforcement\nfix dev manifests]
+  TAG --> REQ[PolicyApprovalRequest\n→ namespace approvers]
+  REQ --> PAT[Pat approves §17A.2]
+  PAT --> ACT[Constraint active in\npayments-prod / -dev only]
 ```
 
 ## Notes
-Related: DT-50 (namespace-scoped simulation deep-dive), DT-53 (granting the role), DT-55 (storage-scope verification), HL-08 (NS authoring end-to-end). §17A.5: "GUI-only authorization is insufficient" — tests must hit the storage API directly to confirm scope.
+Related: HL-04, HL-08, DT-50, DT-53, DT-55. Storage-level enforcement (§17A.5) is what makes this different from a GUI-only filter — verified by API probe, not screenshot.

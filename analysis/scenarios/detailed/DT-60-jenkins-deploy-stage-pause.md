@@ -7,7 +7,7 @@
 **Trigger:** Sam's Jenkinsfile enters the `Deploy to payments-prod` stage and invokes `policyGate('DEPLOY-APPROVAL-001')`.
 
 ## Steps
-1. The library step calls the CI/CD PDP (§17C.4) with `event=deployment.requested`, `job=payments-api`, `artifact_digest=sha256:...`, `target_namespace=payments-prod`, `subject={sub:sam, groups:[team-payments]}` — the §17D.4 "Deployment requested" decision point.
+1. The library calls the CI/CD PDP (§17C.4) with `event=deployment.requested`, `job=payments-api`, `artifact_digest=sha256:...`, `target_namespace=payments-prod`, `subject={sub:sam}` — the §17D.4 "Deployment requested" decision point.
 2. The PDP evaluates `DEPLOY-APPROVAL-001` and returns `{"decision":"suspend_pending_approval","approval_required_from":{"type":"role","value":"security-reviewer"},"outcome_reason":"Production deploy requires security approval"}` per §17B.2.
 3. The platform mints `correlation_id`, sets `expires_at=now+8h`, persists state `pending`, and emits the §17B.3 webhook `approval.requested` with `control_id`, `resource={kind:JenkinsDeployment, namespace:payments-prod, name:payments-api}`, `subject`, `approval_required_from`, `correlation_id`, `expires_at`. External routing is out of scope (§17B.3).
 4. The library pauses the stage per §17B.4 Jenkins row ("Pause stage pending input or external webhook result"), registered as a `correlation_id` waiter via Pipeline `input` — not by holding HTTP open. Jenkins UI and Console show `correlation_id`, approver role, `expires_at`.
