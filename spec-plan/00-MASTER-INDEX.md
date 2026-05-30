@@ -89,4 +89,53 @@ alternative-architecture trees.
 - `analysis/scenarios-index.md` + `analysis/scenarios/` — 100 scenarios (20 HL + 80 DT)
 - `INDEX.md` — original source-doc guide
 
-> Corpus statistics and the consolidated top-defects roll-up are appended in Wave 3.
+---
+
+## Corpus statistics
+
+| Metric | Value |
+|---|---|
+| Total spec-plan files | 104 |
+| Total lines | ~15,600 |
+| Components (SPEC + PLAN + ADVERSARIAL each) | 23 |
+| Alternative-architecture trees | 8 (A1, B4×2, C2, D2, E1×2, F4) |
+| Domains (INDEX + SUMMARY + ADVERSARIAL each) | 6 |
+| Cross-cutting reconciliation docs | 6 |
+| Unified data-model entities | 51 |
+| Consolidated cross-domain defects | 22 (XD-1..XD-22) |
+| Agents used | 6 domain leads + 5 cross-cutting (+ orchestrator) |
+
+## Headline reconciliation flags (read before building)
+
+These are decisions the cross-cutting wave surfaced that **override** the
+parallel-authored component docs. They are the first things to action.
+
+1. **🔴 Re-open C2 before freezing it (`v1.0` → `v1.0-rc`).** `CROSSCUT-ADVERSARIAL.md`
+   (XD-3, XD-1, XD-11) found the "frozen" 36-field audit schema already baked in the
+   action-model conflation (`mutate` as a sibling of `deny`; three incompatible closed
+   action enums) and a self-contradictory external-data-value capture rule. Land the
+   9 build-blocking fixes, then re-freeze. The "frozen" framing in
+   `components/C2-audit-schema/SPEC.md`, `INTER-DOMAIN-CONTRACTS.md`, and `DATA-MODEL.md`
+   is therefore **provisional** pending the rc pass.
+2. **🟠 `correlation_id` is unresolved across two cross-cutting docs (intentional, open).**
+   `DATA-MODEL.md` keeps `correlation_id = K8s AdmissionReview UID`; `INTER-DOMAIN-CONTRACTS.md`
+   **OV-4** overrides it to a retry-stable *logical-flow* id anchored to the
+   `PolicyApprovalRequest` CR name, because an approval retry mints a new UID (XD-8). The
+   logical-flow id is the recommended resolution; the per-admission UID demotes to
+   `engine_context`. Action this in the C2 rc pass.
+3. **🟢 `replay_completeness` middle state renamed `partial` → `best_effort`** (DATA-MODEL R1,
+   contracts OV-1), kept distinct from `jwt_claims_completeness=partial`. Convergently
+   reached by two independent agents.
+4. **🟠 Storage-scope authz (XD-5):** analytics/reporting aggregate reads (C3/C5/E1) must
+   pass D2's `ScopePredicate`; today they likely bypass it. Correctness fix, not hardening.
+5. **🟠 Additive roles break separation-of-duties (XD-4):** enforce mutual-exclusion on
+   SoD role pairs at grant time, or D3/D4 approval controls are defeated.
+
+**Top cross-domain defects:** see `cross-cutting/CROSSCUT-ADVERSARIAL.md` §-ranked
+register (XD-1..XD-22) and its build-blocking subset (§4) — the 9 fixes that must land
+before the foundation contracts (C2, B4, D2, replay-completeness) re-freeze.
+
+**Where to start building:** `cross-cutting/MASTER-PLAN.md` (platform-first, 5 waves,
+critical path `C2→B1→E1→E2` co-equal with `D1→D2`) or `cross-cutting/MASTER-PLAN-ALT.md`
+(wedge-first, lead with the Compliance Digital Twin: C2→B1→E1). Both freeze the same 5
+load-bearing contracts first.
