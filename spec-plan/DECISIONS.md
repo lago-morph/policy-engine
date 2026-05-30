@@ -1,0 +1,59 @@
+# Decision Log (unattended)
+
+Every decision made without the user present, with rationale. Append-only.
+
+| ID | Decision | Rationale | Reversible? |
+|---|---|---|---|
+| D-001 | Exclude `.claude/skills/**` and `retrospective/**` from components to be spec'd | They are tooling/meta (how we work), not the product. Still indexed. | Yes |
+| D-002 | 100 scenario files treated as traceability targets, not re-spec'd | They already specify behavior; we link them from TRACEABILITY + component SPECs | Yes |
+| D-003 | Three-level agent hierarchy (orchestrator→domain leads→authors) | Max parallelism; matches user's requested structure | Yes |
+| D-004 | Keep all intermediate docs, heavily indexed | User instruction; reuse later | Yes |
+| D-005 | 23 components in 6 domains as the decomposition unit | Maps cleanly to spec sections; balanced domain sizes for parallel leads | Yes |
+| D-006 | ALT trees on A1, B4, C2, D2, E1, F4 + a cross-cut alt sequencing | Highest-leverage / most-contested architecture choices | Yes |
+| D-007 | Domain leads must guarantee SPEC.md+PLAN.md per component even if a subagent fails | Robustness against nested-agent flakiness over a long unattended run | Yes |
+
+## Wave 2 cross-cutting decisions (promoted by the primary in Wave 3)
+
+| ID | Decision | Rationale | Reversible? |
+|---|---|---|---|
+| D-008 | Environment had no Agent/Task tool inside subagents → domain leads authored all three personas (cooperative/adversarial/alt) directly | Robustness rule D-007 fired; quality preserved, hierarchy degraded gracefully to 2 levels | n/a |
+| D-009 | Promote **B4 action model** to a foundation contract alongside C2/A1/D1/D2 | The action enum is baked into C2's `decision` field; must resolve before C2 freezes (MASTER-PLAN, XD-3) | Yes |
+| D-010 | Rename `replay_completeness` middle state `partial` → **`best_effort`**; keep `jwt_claims_completeness=partial` distinct | Two `partial` meanings were the root cause of consumer confusion (DATA-MODEL R1, contracts OV-1) | Yes |
+| D-011 | **Re-open C2 `v1.0` → `v1.0-rc`** before treating it as frozen | CROSSCUT XD-3/XD-1/XD-11: the "frozen" schema baked in the action conflation + self-contradictory external-data capture the domains said to fix first | Yes |
+| D-012 | `correlation_id` = retry-stable **logical-flow id** (anchored to `PolicyApprovalRequest` CR name), per-admission UID demoted to `engine_context` | Approval retry mints a new AdmissionReview UID, fragmenting the governance transaction (XD-8, contracts OV-4) — supersedes DATA-MODEL's literal UID rule, to be settled in the C2 rc pass | Yes |
+| D-013 | CRD ownership split: **B4** owns the 6 §17C.6 schemas, **F2** owns controllers + 3 new CRDs, **F1** owns REST projection | Resolves the B4/F2/F1 collision (contracts OV-2) | Yes |
+| D-014 | Storage `ScopePredicate` MUST be traversed by analytics/reporting aggregate reads (C3/C5/E1), not just CRUD | XD-5: the richest queries are the most likely scope-escape surface | Yes |
+| D-015 | Mutual-exclusion enforced on separation-of-duties role pairs at grant time | XD-4: additive/union roles otherwise let one subject be author+approver, defeating D3/D4 | Yes |
+
+These cross-cutting decisions are **provisional** where they touch the C2 rc pass
+(D-011/D-012); they are the agenda for the foundation-contract re-freeze, documented
+in `cross-cutting/CROSSCUT-ADVERSARIAL.md` §4 (build-blocking subset).
+
+## Wave 4 closeout decisions
+
+| ID | Decision | Rationale | Reversible? |
+|---|---|---|---|
+| D-016 | **`cross-cutting/C2-v1.0-rc-RECONCILED.md` (41 fields) is the canonical audit schema**; it supersedes `components/C2-audit-schema/SPEC.md`, `INTER-DOMAIN-CONTRACTS.md`, and `DATA-MODEL.md` wherever they disagree on the schema | The meta-adversarial review proved the five Wave-2 docs disagreed on whether C2 was frozen; one canonical doc removes the ambiguity. Lands D-011/D-012 concretely | Yes |
+| D-017 | **Operational/NFR architecture is an explicit, documented GAP** (scale/cost, DR, key-mgmt, retention, compute tenancy, day-2 ops, Rego human-factors) — not silently omitted | Meta-adversarial §3–4; honesty over false completeness. A future workstream owns it | n/a |
+| D-018 | Record the **wedge-first strategic signal** in the master index without overriding the platform-first plan; keep BOTH trees | User wanted alternative trees preserved for review, not pre-decided. Three independent reviewers favor wedge-first; the user makes the call | Yes |
+| D-019 | Wave 4 (meta-reviews + C2-rc) was added to spend remaining budget per "spare no expense"; it is adversarial-on-the-synthesis to guard against parallel-authoring groupthink | The meta pass found a real cross-doc contradiction the first cross-cutting wave missed — it earned its cost | n/a |
+
+**Known process lesson (for the retrospective):** parallel-authored cross-cutting docs need
+their own reconciliation gate; running 5 synthesis agents concurrently reproduced, at the
+meta level, the very inconsistency they were meant to remove. The fix here was a 6th
+(meta-adversarial) pass + one canonical artifact (`C2-v1.0-rc-RECONCILED.md`).
+
+## Wave 5 (Operational/NFR) decisions
+
+| ID | Decision | Rationale | Reversible? |
+|---|---|---|---|
+| D-020 | Add **Domain G (8 NFR components)** to fill the meta-adversarial gap, at the same intensity (SPEC/PLAN/ADVERSARIAL + ALT on G1/G3/G4/G5) | "Do the operational/NFR architecture with the same intensity" | Yes |
+| D-021 | NFR-driven C2 changes (chain sharding, per-tenant chain, infrastructure_degraded, restore markers, erased_input, key_id/KTL) are **folded into the open C2 `v1.0-rc`**, not a second schema fork | One schema reconciliation, not many; `NFR-CROSSCUT-ADVERSARIAL` checks they compose | Yes |
+| D-022 | Authored `HANDOFF.md` as the canonical pick-up-here doc | User asked for a handoff + done/to-do summary | Yes |
+| D-023 | Domain-G closing sub-wave (index + NFR cross-cut + NFR devil's-advocate) dispatched in parallel; folded into index on landing | Same closing pattern as the functional domains | Yes |
+
+**Process note:** every NFR component independently concluded it was "really a cross-cutting
+contract on C2/D2, not a standalone component." That is a real signal — the NFR layer is
+mostly a set of mandates on the functional components, and `NFR-CROSSCUT-ADVERSARIAL.md`
+exists to propagate them (avoiding the meta-adversarial's M-1 "fix lives in one doc, owning
+docs unchanged" failure).

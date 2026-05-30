@@ -12,6 +12,23 @@ Read them in roughly this order:
 
 ---
 
+## Derived: detailed spec + implementation plan (`spec-plan/`)
+
+The source documents above have been decomposed into an **incredibly detailed
+spec + implementation plan for every piece** of the platform — 23 engineering
+components across 6 domains, each with an exhaustive `SPEC.md`, a parallelism-aware
+`PLAN.md`, an adversarial `ADVERSARIAL-REVIEW.md`, and (on high-value pieces)
+alternative-architecture `ALT-*.md` trees — plus a cross-cutting reconciliation wave
+(master build plan, wedge-first alternative, cross-domain adversarial register,
+unified data model, frozen inter-domain contracts, traceability matrix).
+
+➡️ **Start at [`spec-plan/00-MASTER-INDEX.md`](spec-plan/00-MASTER-INDEX.md).**
+The method is in [`spec-plan/00-ORCHESTRATION-PLAN.md`](spec-plan/00-ORCHESTRATION-PLAN.md);
+every unattended decision is logged in [`spec-plan/DECISIONS.md`](spec-plan/DECISIONS.md).
+~104 files / ~15,600 lines, produced by a maximally-parallel multi-agent workflow.
+
+---
+
 ## `openssf_opa_unified_governance_platform_spec v1.md`
 
 **Purpose.** Defines a comprehensive product specification for a unified governance, policy enforcement, audit, and simulation platform combining OpenSSF Gemara, OPA/Rego, Conftest, Gatekeeper, Kyverno, Privateer, and Keycloak. It provides an executable, traceable bridge between governance intent and runtime enforcement across Kubernetes, CI/CD, identity, and supply-chain systems.
