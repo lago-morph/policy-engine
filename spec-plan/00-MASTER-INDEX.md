@@ -77,6 +77,10 @@ alternative-architecture trees.
 | [`DATA-MODEL.md`](cross-cutting/DATA-MODEL.md) | Unified entity/relationship model + shared join keys |
 | [`INTER-DOMAIN-CONTRACTS.md`](cross-cutting/INTER-DOMAIN-CONTRACTS.md) | The 6 frozen inter-domain contracts |
 | [`TRACEABILITY.md`](cross-cutting/TRACEABILITY.md) | Component ↔ §§ ↔ personas ↔ 100 scenarios |
+| [`C2-v1.0-rc-RECONCILED.md`](cross-cutting/C2-v1.0-rc-RECONCILED.md) | **Canonical** reconciled audit schema (41 fields) — resolves the freeze contradiction |
+| [`BUILD-BLOCKING-FIXES.md`](cross-cutting/BUILD-BLOCKING-FIXES.md) | 9 ticket-style fixes (BB-1..BB-9) to land before the contract re-freeze |
+| [`META-ADVERSARIAL-SECOND-OPINION.md`](cross-cutting/META-ADVERSARIAL-SECOND-OPINION.md) | Independent review of the synthesis itself + missing-NFR risk register |
+| [`THESIS-DEVILS-ADVOCATE.md`](cross-cutting/THESIS-DEVILS-ADVOCATE.md) | Kill-the-deal / build-vs-buy review (verdict: narrow to one wedge) |
 
 ---
 
@@ -95,28 +99,32 @@ alternative-architecture trees.
 
 | Metric | Value |
 |---|---|
-| Total spec-plan files | 104 |
-| Total lines | ~15,600 |
+| Total spec-plan files | 108 |
+| Total lines | ~16,700 |
 | Components (SPEC + PLAN + ADVERSARIAL each) | 23 |
 | Alternative-architecture trees | 8 (A1, B4×2, C2, D2, E1×2, F4) |
 | Domains (INDEX + SUMMARY + ADVERSARIAL each) | 6 |
-| Cross-cutting reconciliation docs | 6 |
+| Cross-cutting docs | 10 (6 reconciliation + C2-rc + build-blocking + 2 meta-reviews) |
 | Unified data-model entities | 51 |
-| Consolidated cross-domain defects | 22 (XD-1..XD-22) |
-| Agents used | 6 domain leads + 5 cross-cutting (+ orchestrator) |
+| Consolidated cross-domain defects | 22 (XD-1..XD-22), 9 build-blocking (BB-1..BB-9) |
+| Agents used | 6 domain leads + 5 cross-cutting + 3 meta-review (+ orchestrator) |
 
 ## Headline reconciliation flags (read before building)
 
 These are decisions the cross-cutting wave surfaced that **override** the
 parallel-authored component docs. They are the first things to action.
 
-1. **🔴 Re-open C2 before freezing it (`v1.0` → `v1.0-rc`).** `CROSSCUT-ADVERSARIAL.md`
-   (XD-3, XD-1, XD-11) found the "frozen" 36-field audit schema already baked in the
-   action-model conflation (`mutate` as a sibling of `deny`; three incompatible closed
-   action enums) and a self-contradictory external-data-value capture rule. Land the
-   9 build-blocking fixes, then re-freeze. The "frozen" framing in
-   `components/C2-audit-schema/SPEC.md`, `INTER-DOMAIN-CONTRACTS.md`, and `DATA-MODEL.md`
-   is therefore **provisional** pending the rc pass.
+1. **🔴→✅ Re-open C2 before freezing it (`v1.0` → `v1.0-rc`). RESOLVED — see
+   `cross-cutting/C2-v1.0-rc-RECONCILED.md`.** `CROSSCUT-ADVERSARIAL.md` (XD-3, XD-1, XD-11)
+   found the "frozen" 36-field schema baked in the action-model conflation (`mutate` as a
+   sibling of `deny`; three incompatible closed action enums) and a self-contradictory
+   external-data-value capture rule. The **meta-adversarial review** then found the five
+   Wave-2 docs *disagreed with each other* on whether C2 was frozen (CROSSCUT says re-open;
+   MASTER-PLAN says FROZEN; INTER-DOMAIN-CONTRACTS §5.5 says "no new field" vs XD-3's "needs a
+   new field"). **`C2-v1.0-rc-RECONCILED.md` is now the single canonical schema** (41 fields,
+   additive-only) that lands the fixes; `components/C2-audit-schema/SPEC.md`,
+   `INTER-DOMAIN-CONTRACTS.md`, and `DATA-MODEL.md` are superseded by it on these points and
+   re-freeze to final `1.0` only after `BUILD-BLOCKING-FIXES.md` BB-1..BB-7 pass.
 2. **🟠 `correlation_id` is unresolved across two cross-cutting docs (intentional, open).**
    `DATA-MODEL.md` keeps `correlation_id = K8s AdmissionReview UID`; `INTER-DOMAIN-CONTRACTS.md`
    **OV-4** overrides it to a retry-stable *logical-flow* id anchored to the
@@ -139,3 +147,27 @@ before the foundation contracts (C2, B4, D2, replay-completeness) re-freeze.
 critical path `C2→B1→E1→E2` co-equal with `D1→D2`) or `cross-cutting/MASTER-PLAN-ALT.md`
 (wedge-first, lead with the Compliance Digital Twin: C2→B1→E1). Both freeze the same 5
 load-bearing contracts first.
+
+## Acknowledged gap — operational / NFR architecture (NOT yet spec'd)
+
+The meta-adversarial review (`cross-cutting/META-ADVERSARIAL-SECOND-OPINION.md`) correctly
+found that **no component owns the non-functional / operational architecture.** This is a
+known, documented gap, not an oversight to hide. A future workstream must spec:
+production-scale + cost model (only §22's small POC exists), DR/RPO/RTO for the audit log,
+key-management lifecycle for all the signing (`D4-OQ-1`), audit-log retention economics,
+multi-tenant *compute/storage* isolation (today it's a `WHERE` clause), day-2 operational
+burden of the ~14-service stack, and a **Rego-authoring / human-factors owner** (the #1
+field-failure mode of OPA products). Recommended owners noted in the meta-adversarial §3–4.
+
+## Strategic signal (three independent reviewers converge)
+
+`MASTER-PLAN-ALT.md`, `THESIS-DEVILS-ADVOCATE.md`, and `META-ADVERSARIAL-SECOND-OPINION.md`
+— plus the original market memos — **independently converge on wedge-first over
+platform-first.** The devil's advocate goes furthest (*narrow to Wedge 5, OPA Control Plane
+successor, or kill it*); the others fund a wedge-first thin slice conditionally on (a) the
+C2 reconciliation landing, (b) an operational spike answering scale/DR/keys, and (c)
+empirical proof of two unproven load-bearing claims: cross-engine Rego portability and
+replay-coverage (what fraction of real events actually replay `complete`). The decisive
+go/no-go test (devil's advocate): **name three design-partner customers who will sign a
+90-day paid pilot for one named wedge, and the exact sentence each says about why OPA
+Control Plane / Wiz / their Vanta+Kyverno stack can't do it today.**

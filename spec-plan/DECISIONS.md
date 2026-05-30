@@ -28,3 +28,17 @@ Every decision made without the user present, with rationale. Append-only.
 These cross-cutting decisions are **provisional** where they touch the C2 rc pass
 (D-011/D-012); they are the agenda for the foundation-contract re-freeze, documented
 in `cross-cutting/CROSSCUT-ADVERSARIAL.md` §4 (build-blocking subset).
+
+## Wave 4 closeout decisions
+
+| ID | Decision | Rationale | Reversible? |
+|---|---|---|---|
+| D-016 | **`cross-cutting/C2-v1.0-rc-RECONCILED.md` (41 fields) is the canonical audit schema**; it supersedes `components/C2-audit-schema/SPEC.md`, `INTER-DOMAIN-CONTRACTS.md`, and `DATA-MODEL.md` wherever they disagree on the schema | The meta-adversarial review proved the five Wave-2 docs disagreed on whether C2 was frozen; one canonical doc removes the ambiguity. Lands D-011/D-012 concretely | Yes |
+| D-017 | **Operational/NFR architecture is an explicit, documented GAP** (scale/cost, DR, key-mgmt, retention, compute tenancy, day-2 ops, Rego human-factors) — not silently omitted | Meta-adversarial §3–4; honesty over false completeness. A future workstream owns it | n/a |
+| D-018 | Record the **wedge-first strategic signal** in the master index without overriding the platform-first plan; keep BOTH trees | User wanted alternative trees preserved for review, not pre-decided. Three independent reviewers favor wedge-first; the user makes the call | Yes |
+| D-019 | Wave 4 (meta-reviews + C2-rc) was added to spend remaining budget per "spare no expense"; it is adversarial-on-the-synthesis to guard against parallel-authoring groupthink | The meta pass found a real cross-doc contradiction the first cross-cutting wave missed — it earned its cost | n/a |
+
+**Known process lesson (for the retrospective):** parallel-authored cross-cutting docs need
+their own reconciliation gate; running 5 synthesis agents concurrently reproduced, at the
+meta level, the very inconsistency they were meant to remove. The fix here was a 6th
+(meta-adversarial) pass + one canonical artifact (`C2-v1.0-rc-RECONCILED.md`).
