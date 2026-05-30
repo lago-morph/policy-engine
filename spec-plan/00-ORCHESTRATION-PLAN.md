@@ -137,6 +137,16 @@ Each `spec-plan/domains/<domain>/`:
   model, traceability). Commit.
 - **Wave 3:** primary writes master index, runs a consistency pass, updates top-level
   INDEX.md, pushes, opens PR.
+- **Wave 4 (added):** meta-review — C2 `v1.0-rc` reconciled schema + build-blocking
+  checklist, independent meta-adversarial second opinion, thesis devil's-advocate.
+- **Wave 5 (added) — Domain G, Operational/NFR architecture:** the meta-adversarial review
+  found no component owned the non-functional/operational layer. Added **Domain G** with 8
+  components (G1 Scale/Performance, G2 Cost/Retention Economics, G3 Availability/DR/Resilience,
+  G4 Key Management, G5 Multi-Tenancy Isolation, G6 Observability/Day-2 Ops, G7 Data
+  Lifecycle/Retention/Privacy, G8 Rego-Authoring/Human-Factors), same doc contract
+  (SPEC/PLAN/ADVERSARIAL + ALT on G1/G3/G4/G5), dispatched as 8 parallel author agents,
+  followed by a domain index + NFR cross-cut adversarial + an NFR devil's-advocate
+  (over/under-engineered for the POC?).
 
 ## 8. Decisions made unattended (see DECISIONS.md for the live log)
 
