@@ -36,9 +36,10 @@ Every unattended decision: [`DECISIONS.md`](DECISIONS.md).
 | 3 | Master-index roll-up, decision log, top-level INDEX pointer, link sweep | ✅ |
 | 4 | C2 `v1.0-rc` reconciled schema + 9-ticket build-blocking checklist · meta-adversarial second opinion · thesis devil's-advocate | ✅ |
 | 5 | **8 NFR components** (Domain G) × SPEC + PLAN + ADVERSARIAL, + 4 ALT trees | ✅ |
-| 5-close | Domain-G index · NFR cross-cut adversarial · NFR devil's-advocate | ⏳ *(3 agents finishing; fold into index on landing)* |
+| 5-close | Domain-G index · NFR cross-cut adversarial (chain-model composes ✓) · NFR devil's-advocate (POC cut-line) | ✅ |
 
-**~140 files / ~22,000+ lines. 25 agents across 6 waves.** All committed and pushed to PR #5.
+**~145 files / ~23,000+ lines. 25 agents across 6 waves.** All committed and pushed to PR #5.
+**The corpus is complete; the remaining work is decisions + one reconciliation pass (§3, §6).**
 
 ### The 31 components
 - **A** Governance Core: A1 Gemara model, A2 Policy lifecycle
@@ -73,9 +74,17 @@ and [`BUILD-BLOCKING-FIXES.md`](cross-cutting/BUILD-BLOCKING-FIXES.md) BB-1..BB-
 | **G7** | `insufficient:erased_input` reason code (lawful erasure ≠ capture defect) |
 | **G4** | `key_id`-indexed verification + Key Transparency Log binding |
 
-**Open question for you:** do chain-sharding (G1) + per-tenant-chain (G5) + epoch-boundaries
-(G6) + restore-markers (G3) compose into *one* coherent chain model, or do they fight? The
-`NFR-CROSSCUT-ADVERSARIAL.md` agent is answering exactly this — read its verdict first.
+**Answered (was open):** do chain-sharding (G1) + per-tenant-chain (G5) + epoch-boundaries
+(G6) + restore-markers (G3) compose into *one* coherent chain model? **Yes, conditionally**
+(`NFR-CROSSCUT-ADVERSARIAL.md` NX-1, §"do they compose"). The unified model: chain identity =
+**`(tenant, source.system, cluster, epoch)`**, `chain_seq` monotonic within that tuple, plus a
+**global signed roll-up super-checkpoint** over all chain-heads (the keystone that keeps
+whole-chain deletion globally detectable); G6's schema-epoch seal and G3's failover-epoch
+fence unify into one cross-sign mechanism with two triggers; crypto-shred rides inside any
+chain without touching `content_hash`. They compose **in principle but conflict on paper** —
+the C2-rc still defines `chain_seq` as a bare per-source integer. The fix is the §3a
+reconciliation pass folding N-1..N-10 into the rc *before* re-freeze. **This is the single
+highest-priority authoring task left.**
 
 ### 3b. Other build-blocking correctness fixes (not C2)
 - **BB-8 (XD-5):** D2 `ScopePredicate` must be traversed by analytics/reporting aggregate
