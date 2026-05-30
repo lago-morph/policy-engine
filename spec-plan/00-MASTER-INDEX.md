@@ -5,6 +5,7 @@ policy-engine design corpus. Built by a maximally-parallel multi-agent workflow
 (orchestrator → 6 domain leads → cooperative/adversarial/alt authors), then a
 cross-cutting reconciliation wave.
 
+- **📍 Start here / pick-up-here:** [`HANDOFF.md`](HANDOFF.md) — done, open items, next moves
 - **How this was produced:** [`00-ORCHESTRATION-PLAN.md`](00-ORCHESTRATION-PLAN.md)
 - **Every unattended decision:** [`DECISIONS.md`](DECISIONS.md)
 - **23 components · 6 domains · cooperative + adversarial + alt-architecture trees.**
@@ -65,6 +66,20 @@ alternative-architecture trees.
 | F3 POC scale, MVP & sequencing | §22,26,27 | [SPEC](components/F3-mvp-sequencing/SPEC.md) · [PLAN](components/F3-mvp-sequencing/PLAN.md) · [ADV](components/F3-mvp-sequencing/ADVERSARIAL-REVIEW.md) |
 | F4 AI / agent governance extension | reframed-for-ai | [SPEC](components/F4-ai-agent-extension/SPEC.md) · [PLAN](components/F4-ai-agent-extension/PLAN.md) · [ADV](components/F4-ai-agent-extension/ADVERSARIAL-REVIEW.md) · [ALT: separate product / async tier](components/F4-ai-agent-extension/ALT-ai-as-separate-product-and-async-tier.md) |
 
+### G · Operational / NFR Architecture — [domain index](domains/G-operational-nfr/DOMAIN-INDEX.md)
+The non-functional/operational layer the meta-adversarial review found unowned. Each
+component cross-cuts the functional corpus (A–F).
+| Component | Cross-cuts | Docs |
+|---|---|---|
+| G1 Scale, performance & capacity | B,C,E,F2,§22 | [SPEC](components/G1-scale-performance/SPEC.md) · [PLAN](components/G1-scale-performance/PLAN.md) · [ADV](components/G1-scale-performance/ADVERSARIAL-REVIEW.md) · [ALT: streaming/sharded/sampled](components/G1-scale-performance/ALT-streaming-sharded-sampled.md) |
+| G2 Cost & retention economics | C2,F2,G7 | [SPEC](components/G2-cost-retention-economics/SPEC.md) · [PLAN](components/G2-cost-retention-economics/PLAN.md) · [ADV](components/G2-cost-retention-economics/ADVERSARIAL-REVIEW.md) |
+| G3 Availability, DR & resilience | C2,B5,F2 | [SPEC](components/G3-availability-dr-resilience/SPEC.md) · [PLAN](components/G3-availability-dr-resilience/PLAN.md) · [ADV](components/G3-availability-dr-resilience/ADVERSARIAL-REVIEW.md) · [ALT: DR topology](components/G3-availability-dr-resilience/ALT-DR-TOPOLOGY.md) |
+| G4 Key management & crypto lifecycle | D4,B1,C2,C1,C5 | [SPEC](components/G4-key-management/SPEC.md) · [PLAN](components/G4-key-management/PLAN.md) · [ADV](components/G4-key-management/ADVERSARIAL-REVIEW.md) · [ALT: key custody](components/G4-key-management/ALT-key-custody-models.md) |
+| G5 Multi-tenancy isolation | D1,D2,C2,F2 | [SPEC](components/G5-multitenancy-isolation/SPEC.md) · [PLAN](components/G5-multitenancy-isolation/PLAN.md) · [ADV](components/G5-multitenancy-isolation/ADVERSARIAL-REVIEW.md) · [ALT: tenancy models](components/G5-multitenancy-isolation/ALT-tenancy-models.md) |
+| G6 Observability, SLOs & day-2 ops | all, C2-migration | [SPEC](components/G6-observability-day2-ops/SPEC.md) · [PLAN](components/G6-observability-day2-ops/PLAN.md) · [ADV](components/G6-observability-day2-ops/ADVERSARIAL-REVIEW.md) |
+| G7 Data lifecycle, retention & privacy | C2,D2,F4,G2 | [SPEC](components/G7-data-lifecycle-privacy/SPEC.md) · [PLAN](components/G7-data-lifecycle-privacy/PLAN.md) · [ADV](components/G7-data-lifecycle-privacy/ADVERSARIAL-REVIEW.md) |
+| G8 Rego-authoring & human factors | A2,B1,B3,E1,E2 | [SPEC](components/G8-rego-authoring-human-factors/SPEC.md) · [PLAN](components/G8-rego-authoring-human-factors/PLAN.md) · [ADV](components/G8-rego-authoring-human-factors/ADVERSARIAL-REVIEW.md) |
+
 ---
 
 ## Cross-cutting reconciliation (Wave 2)
@@ -81,6 +96,8 @@ alternative-architecture trees.
 | [`BUILD-BLOCKING-FIXES.md`](cross-cutting/BUILD-BLOCKING-FIXES.md) | 9 ticket-style fixes (BB-1..BB-9) to land before the contract re-freeze |
 | [`META-ADVERSARIAL-SECOND-OPINION.md`](cross-cutting/META-ADVERSARIAL-SECOND-OPINION.md) | Independent review of the synthesis itself + missing-NFR risk register |
 | [`THESIS-DEVILS-ADVOCATE.md`](cross-cutting/THESIS-DEVILS-ADVOCATE.md) | Kill-the-deal / build-vs-buy review (verdict: narrow to one wedge) |
+| [`NFR-CROSSCUT-ADVERSARIAL.md`](cross-cutting/NFR-CROSSCUT-ADVERSARIAL.md) | Contradictions across Domain G + against A–F; consolidated C2-rc ratification list |
+| [`NFR-DEVILS-ADVOCATE.md`](cross-cutting/NFR-DEVILS-ADVOCATE.md) | POC NFR cut-line — what's required for a first design partner vs gold-plating |
 
 ---
 
@@ -99,15 +116,15 @@ alternative-architecture trees.
 
 | Metric | Value |
 |---|---|
-| Total spec-plan files | 108 |
-| Total lines | ~16,700 |
-| Components (SPEC + PLAN + ADVERSARIAL each) | 23 |
-| Alternative-architecture trees | 8 (A1, B4×2, C2, D2, E1×2, F4) |
-| Domains (INDEX + SUMMARY + ADVERSARIAL each) | 6 |
-| Cross-cutting docs | 10 (6 reconciliation + C2-rc + build-blocking + 2 meta-reviews) |
-| Unified data-model entities | 51 |
-| Consolidated cross-domain defects | 22 (XD-1..XD-22), 9 build-blocking (BB-1..BB-9) |
-| Agents used | 6 domain leads + 5 cross-cutting + 3 meta-review (+ orchestrator) |
+| Total spec-plan files | ~140 |
+| Total lines | ~22,000+ |
+| Components (SPEC + PLAN + ADVERSARIAL each) | **31** (23 functional A–F + 8 NFR Domain G) |
+| Alternative-architecture trees | 12 (A1, B4×2, C2, D2, E1×2, F4, G1, G3, G4, G5) |
+| Domains (INDEX + SUMMARY + ADVERSARIAL each) | **7** (A–G) |
+| Cross-cutting docs | 12 |
+| Unified data-model entities | 51 (functional) + NFR entities |
+| Consolidated cross-domain defects | 22 (XD), 9 build-blocking (BB), + Domain-G register (XG) |
+| Agents used | 6 domain leads + 5 cross-cutting + 3 meta + 8 NFR + 3 NFR-close (+ orchestrator) = **25** |
 
 ## Headline reconciliation flags (read before building)
 

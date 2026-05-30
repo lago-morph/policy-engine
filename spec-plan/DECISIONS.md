@@ -42,3 +42,18 @@ in `cross-cutting/CROSSCUT-ADVERSARIAL.md` §4 (build-blocking subset).
 their own reconciliation gate; running 5 synthesis agents concurrently reproduced, at the
 meta level, the very inconsistency they were meant to remove. The fix here was a 6th
 (meta-adversarial) pass + one canonical artifact (`C2-v1.0-rc-RECONCILED.md`).
+
+## Wave 5 (Operational/NFR) decisions
+
+| ID | Decision | Rationale | Reversible? |
+|---|---|---|---|
+| D-020 | Add **Domain G (8 NFR components)** to fill the meta-adversarial gap, at the same intensity (SPEC/PLAN/ADVERSARIAL + ALT on G1/G3/G4/G5) | "Do the operational/NFR architecture with the same intensity" | Yes |
+| D-021 | NFR-driven C2 changes (chain sharding, per-tenant chain, infrastructure_degraded, restore markers, erased_input, key_id/KTL) are **folded into the open C2 `v1.0-rc`**, not a second schema fork | One schema reconciliation, not many; `NFR-CROSSCUT-ADVERSARIAL` checks they compose | Yes |
+| D-022 | Authored `HANDOFF.md` as the canonical pick-up-here doc | User asked for a handoff + done/to-do summary | Yes |
+| D-023 | Domain-G closing sub-wave (index + NFR cross-cut + NFR devil's-advocate) dispatched in parallel; folded into index on landing | Same closing pattern as the functional domains | Yes |
+
+**Process note:** every NFR component independently concluded it was "really a cross-cutting
+contract on C2/D2, not a standalone component." That is a real signal — the NFR layer is
+mostly a set of mandates on the functional components, and `NFR-CROSSCUT-ADVERSARIAL.md`
+exists to propagate them (avoiding the meta-adversarial's M-1 "fix lives in one doc, owning
+docs unchanged" failure).
